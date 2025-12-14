@@ -1,101 +1,138 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import SearchBox from "../components/SearchBox";
+import CurrentWeather from "../components/CurrentWeather";
+import Forecast from "../components/Forecast";
+import HourlyForecast from "../components/HourlyForecast";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [weatherData, setWeatherData] = useState(null);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [unit, setUnit] = useState("C");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // YENİ: Menünün açık mı kapalı mı olduğunu takip eden hafıza
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const fetchWeather = async (city) => {
+    try {
+      const formattedCity = city.toLocaleUpperCase("tr-TR");
+      const geoRes = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+          formattedCity
+        )}&count=1&language=tr&format=json`
+      );
+      const geoData = await geoRes.json();
+
+      if (!geoData.results) {
+        alert("Şehir bulunamadı! Lütfen tekrar dene.");
+        return;
+      }
+
+      const { latitude, longitude, name } = geoData.results[0];
+      const weatherRes = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`
+      );
+      const data = await weatherRes.json();
+
+      setWeatherData({ ...data, cityName: name });
+      setSelectedDayIndex(0);
+    } catch (error) {
+      console.error("Hata oluştu:", error);
+      alert("Veri çekilirken bir hata oldu.");
+    }
+  };
+
+  // Birim seçilince çalışacak fonksiyon
+  const handleUnitSelect = (selectedUnit) => {
+    setUnit(selectedUnit);
+    setIsDropdownOpen(false); // Seçim yapınca menüyü kapat
+  };
+
+  return (
+    <main className="min-h-screen bg-weather-dark text-white py-8 px-4 md:px-16">
+      {/* HEADER */}
+      <header className="flex justify-between items-center mb-16 relative">
+        <div className="flex items-center gap-2">
+          <span className="text-yellow-500 text-3xl">☀️</span>
+          <h1 className="text-xl font-bold tracking-wide">Weather Now</h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {/* --- TASARIMA UYGUN DROPDOWN MENU --- */}
+        <div className="relative">
+          {/* Ana Buton */}
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-2 bg-weather-card py-2 px-4 rounded-lg font-semibold text-sm hover:bg-gray-800 transition-colors border border-white/10 shadow-lg"
+          >
+            ⚙️ Units
+            {/* Küçük ok işareti */}
+            <span
+              className={`text-xs transition-transform ${
+                isDropdownOpen ? "rotate-180" : ""
+              }`}
+            >
+              ▼
+            </span>
+          </button>
+
+          {/* Açılır Pencere (Sadece isDropdownOpen true ise görünür) */}
+          {isDropdownOpen && (
+            <div className="absolute right-0 top-12 w-40 bg-weather-card border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 flex flex-col">
+              <button
+                onClick={() => handleUnitSelect("C")}
+                className={`px-4 py-3 text-left text-sm hover:bg-gray-700 transition-colors flex justify-between items-center ${
+                  unit === "C" ? "text-blue-400 font-bold" : "text-white"
+                }`}
+              >
+                Celsius (°C)
+                {unit === "C" && <span>✓</span>}
+              </button>
+              <div className="h-[1px] bg-white/10"></div> {/* Çizgi */}
+              <button
+                onClick={() => handleUnitSelect("F")}
+                className={`px-4 py-3 text-left text-sm hover:bg-gray-700 transition-colors flex justify-between items-center ${
+                  unit === "F" ? "text-blue-400 font-bold" : "text-white"
+                }`}
+              >
+                Fahrenheit (°F)
+                {unit === "F" && <span>✓</span>}
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* ANA İÇERİK */}
+      <div className="flex flex-col items-center">
+        <h2 className="text-4xl md:text-5xl font-extrabold mb-8 text-center">
+          How's the sky looking today?
+        </h2>
+
+        <SearchBox onSearch={fetchWeather} />
+
+        {weatherData && (
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 mt-12 w-full max-w-7xl">
+            <div className="flex flex-col gap-8">
+              <CurrentWeather data={weatherData} unit={unit} />
+              <Forecast
+                data={weatherData}
+                selectedIndex={selectedDayIndex}
+                onSelectDay={setSelectedDayIndex}
+                unit={unit}
+              />
+            </div>
+            <div className="flex flex-col h-full">
+              <HourlyForecast
+                data={weatherData}
+                selectedIndex={selectedDayIndex}
+                onSelectDay={setSelectedDayIndex}
+                unit={unit}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
